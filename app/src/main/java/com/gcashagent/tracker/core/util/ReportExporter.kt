@@ -37,12 +37,12 @@ class ReportExporter(private val context: Context) {
                 else "${PhDateTime.formatDate(range.startMillis)} – ${PhDateTime.formatDate(range.endExclusiveMillis - 1)}"
             )
         )
-        rows += emptyList()
+        rows.add(emptyList())
         rows += listOf(ExcelWriter.cell("Total Cash In"), ExcelWriter.cell(PesoFormatter.pesosValue(summary.totalCashInCentavos)))
         rows += listOf(ExcelWriter.cell("Total Cash Out"), ExcelWriter.cell(PesoFormatter.pesosValue(summary.totalCashOutCentavos)))
         rows += listOf(ExcelWriter.cell("Net (In − Out)"), ExcelWriter.cell(PesoFormatter.pesosValue(summary.netCentavos)))
         rows += listOf(ExcelWriter.cell("Transactions"), ExcelWriter.cell(summary.transactionCount.toDouble()))
-        rows += emptyList()
+        rows.add(emptyList())
 
         rows += listOf(
             ExcelWriter.cell("Date"),
