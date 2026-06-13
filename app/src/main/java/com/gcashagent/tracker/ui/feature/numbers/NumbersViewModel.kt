@@ -44,13 +44,14 @@ class NumbersViewModel(
 
     /**
      * Validate and save a number (insert when [editing] is null, else update).
+     * On success reports the saved number's id (the new id when inserting).
      * Reports a friendly message through [onError] on validation/duplicate failure.
      */
     fun save(
         editing: GCashNumber?,
         alias: String,
         phoneNumber: String,
-        onSuccess: () -> Unit,
+        onSuccess: (id: Long) -> Unit,
         onError: (String) -> Unit
     ) {
         val trimmedAlias = alias.trim()
@@ -64,12 +65,13 @@ class NumbersViewModel(
 
         viewModelScope.launch {
             try {
-                if (editing == null) {
+                val id = if (editing == null) {
                     repository.addNumber(GCashNumber(alias = trimmedAlias, phoneNumber = digits))
                 } else {
                     repository.updateNumber(editing.copy(alias = trimmedAlias, phoneNumber = digits))
+                    editing.id
                 }
-                onSuccess()
+                onSuccess(id)
             } catch (e: DuplicateNumberException) {
                 onError(e.message ?: "This GCash number is already enrolled.")
             } catch (e: Exception) {

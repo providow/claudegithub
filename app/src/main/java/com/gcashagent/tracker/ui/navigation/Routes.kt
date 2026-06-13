@@ -10,6 +10,9 @@ object Routes {
     /** Sentinel meaning "all numbers" for the combined report. */
     const val ALL_NUMBERS = -1L
 
+    const val DAY = "day/{$ARG_NUMBER_ID}"
+    fun day(numberId: Long) = "day/$numberId"
+
     const val TRANSACTIONS = "transactions/{$ARG_NUMBER_ID}"
     fun transactions(numberId: Long) = "transactions/$numberId"
 
