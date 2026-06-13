@@ -19,9 +19,10 @@ data class DateRange(
         private fun startOfDay(date: LocalDate): Long =
             date.atStartOfDay(PhDateTime.ZONE).toInstant().toEpochMilli()
 
-        /** Inclusive [from..to] calendar dates -> half-open millis range. */
+        /** Inclusive from/to calendar dates -> half-open millis range. */
         fun of(from: LocalDate, to: LocalDate): DateRange {
-            val (lo, hi) = if (from.isAfter(to)) to to from else from to to
+            val lo = if (from.isAfter(to)) to else from
+            val hi = if (from.isAfter(to)) from else to
             return DateRange(
                 startMillis = startOfDay(lo),
                 endExclusiveMillis = startOfDay(hi.plusDays(1)),
