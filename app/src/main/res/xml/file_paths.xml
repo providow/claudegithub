@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Exported reports written to filesDir/exports are shared via this provider -->
+    <files-path name="exports" path="exports/" />
+    <cache-path name="cache" path="/" />
+</paths>
