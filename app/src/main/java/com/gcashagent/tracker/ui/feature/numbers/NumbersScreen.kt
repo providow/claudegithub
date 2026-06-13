@@ -51,7 +51,7 @@ import com.gcashagent.tracker.ui.theme.CashOutRed
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NumbersScreen(
-    onOpenTransactions: (Long) -> Unit,
+    onOpenNumber: (Long) -> Unit,
     onOpenCombinedReport: () -> Unit
 ) {
     val container = appContainer()
@@ -107,7 +107,7 @@ fun NumbersScreen(
                 items(rows, key = { it.number.id }) { row ->
                     NumberCard(
                         row = row,
-                        onClick = { onOpenTransactions(row.number.id) },
+                        onClick = { onOpenNumber(row.number.id) },
                         onEdit = { editingNumber = row.number; sheetError = null; showSheet = true },
                         onDelete = { pendingDelete = row.number }
                     )
@@ -122,11 +122,16 @@ fun NumbersScreen(
             errorMessage = sheetError,
             onDismiss = { showSheet = false; sheetError = null },
             onSubmit = { alias, phone ->
+                val wasAdd = editingNumber == null
                 vm.save(
                     editing = editingNumber,
                     alias = alias,
                     phoneNumber = phone,
-                    onSuccess = { showSheet = false; sheetError = null },
+                    onSuccess = { id ->
+                        showSheet = false
+                        sheetError = null
+                        if (wasAdd) onOpenNumber(id)
+                    },
                     onError = { sheetError = it }
                 )
             }

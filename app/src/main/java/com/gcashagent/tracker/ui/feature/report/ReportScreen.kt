@@ -1,6 +1,5 @@
 package com.gcashagent.tracker.ui.feature.report
 
-import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,7 +40,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gcashagent.tracker.core.domain.model.CashFlow
 import com.gcashagent.tracker.core.domain.model.Transaction
@@ -52,8 +50,8 @@ import com.gcashagent.tracker.ui.components.CashFlowChip
 import com.gcashagent.tracker.ui.components.SummaryCard
 import com.gcashagent.tracker.ui.theme.CashInGreen
 import com.gcashagent.tracker.ui.theme.CashOutRed
+import com.gcashagent.tracker.ui.util.shareExcelFile
 import kotlinx.coroutines.launch
-import java.io.File
 import java.time.Instant
 import java.time.ZoneOffset
 
@@ -128,7 +126,7 @@ fun ReportScreen(
                 OutlinedButton(
                     onClick = {
                         vm.export(
-                            onReady = { file -> shareExcel(context, file) },
+                            onReady = { file -> shareExcelFile(context, file) },
                             onError = { msg -> scope.launch { snackbar.showSnackbar(msg) } }
                         )
                     },
@@ -226,17 +224,4 @@ private fun ReportRow(
             color = amountColor
         )
     }
-}
-
-private fun shareExcel(context: android.content.Context, file: File) {
-    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        putExtra(Intent.EXTRA_STREAM, uri)
-        putExtra(Intent.EXTRA_SUBJECT, file.nameWithoutExtension)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
-    context.startActivity(Intent.createChooser(intent, "Share report").apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    })
 }

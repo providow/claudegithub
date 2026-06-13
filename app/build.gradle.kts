@@ -69,6 +69,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.coil.compose)
+    implementation(libs.mlkit.text.recognition)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 

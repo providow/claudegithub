@@ -4,6 +4,7 @@ import android.content.Context
 import com.gcashagent.tracker.core.data.local.AppDatabase
 import com.gcashagent.tracker.core.data.repository.GCashRepository
 import com.gcashagent.tracker.core.data.repository.GCashRepositoryImpl
+import com.gcashagent.tracker.core.ocr.ReceiptScanner
 import com.gcashagent.tracker.core.util.ImageStore
 import com.gcashagent.tracker.core.util.ReportExporter
 
@@ -24,4 +25,6 @@ class AppContainer(context: Context) {
     val imageStore: ImageStore = ImageStore(context)
 
     val reportExporter: ReportExporter = ReportExporter(context)
+
+    val receiptScanner: ReceiptScanner = ReceiptScanner(context.applicationContext)
 }
