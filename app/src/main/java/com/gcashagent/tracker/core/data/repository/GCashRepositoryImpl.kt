@@ -1,10 +1,13 @@
 package com.gcashagent.tracker.core.data.repository
 
+import com.gcashagent.tracker.core.data.local.ChargeConfigDao
 import com.gcashagent.tracker.core.data.local.FeeBracketDao
 import com.gcashagent.tracker.core.data.local.GCashNumberDao
 import com.gcashagent.tracker.core.data.local.TransactionDao
+import com.gcashagent.tracker.core.data.local.entity.ChargeConfigEntity
 import com.gcashagent.tracker.core.data.local.entity.FeeBracketEntity
 import com.gcashagent.tracker.core.domain.model.CashFlow
+import com.gcashagent.tracker.core.domain.model.ChargeConfig
 import com.gcashagent.tracker.core.domain.model.FeeBracket
 import com.gcashagent.tracker.core.domain.model.GCashNumber
 import com.gcashagent.tracker.core.domain.model.Transaction
@@ -15,7 +18,8 @@ import kotlinx.coroutines.flow.map
 class GCashRepositoryImpl(
     private val numberDao: GCashNumberDao,
     private val transactionDao: TransactionDao,
-    private val feeBracketDao: FeeBracketDao
+    private val feeBracketDao: FeeBracketDao,
+    private val chargeConfigDao: ChargeConfigDao
 ) : GCashRepository {
 
     override fun observeNumbers(): Flow<List<GCashNumber>> =
@@ -103,6 +107,25 @@ class GCashRepositoryImpl(
     override suspend fun loadDefaultTemplate(numberId: Long, flow: CashFlow) {
         feeBracketDao.clearFlow(numberId, flow)
         seedTemplate(numberId, flow)
+    }
+
+    override fun observeChargeConfig(numberId: Long, flow: CashFlow): Flow<ChargeConfig> =
+        chargeConfigDao.observe(numberId, flow).map { it?.toDomain() ?: ChargeConfig.DEFAULT }
+
+    override suspend fun getChargeConfig(numberId: Long, flow: CashFlow): ChargeConfig =
+        chargeConfigDao.get(numberId, flow)?.toDomain() ?: ChargeConfig.DEFAULT
+
+    override suspend fun setChargeConfig(numberId: Long, flow: CashFlow, config: ChargeConfig) {
+        val existing = chargeConfigDao.get(numberId, flow)
+        val entity = ChargeConfigEntity(
+            id = existing?.id ?: 0,
+            gcashNumberId = numberId,
+            flow = flow,
+            mode = config.mode,
+            percentBasisPoints = config.percentBasisPoints,
+            minChargeCentavos = config.minChargeCentavos
+        )
+        if (existing == null) chargeConfigDao.insert(entity) else chargeConfigDao.update(entity)
     }
 
     private suspend fun seedTemplate(numberId: Long, flow: CashFlow) {

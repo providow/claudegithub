@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +44,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gcashagent.tracker.core.domain.model.CashFlow
+import com.gcashagent.tracker.core.domain.model.ChargeConfig
+import com.gcashagent.tracker.core.domain.model.ChargeMode
 import com.gcashagent.tracker.core.domain.model.FeeBracket
 import com.gcashagent.tracker.core.util.PesoFormatter
 import com.gcashagent.tracker.di.appContainer
@@ -59,6 +62,7 @@ fun ChargesScreen(
     val flow by vm.flow.collectAsState()
     val brackets by vm.brackets.collectAsState()
     val otherNumbers by vm.otherNumbers.collectAsState()
+    val config by vm.config.collectAsState()
 
     var editing by remember { mutableStateOf<FeeBracket?>(null) }
     var showDialog by remember { mutableStateOf(false) }
@@ -94,11 +98,13 @@ fun ChargesScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { editing = null; showDialog = true },
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text("Add Bracket") }
-            )
+            if (config.mode == ChargeMode.BRACKETS) {
+                ExtendedFloatingActionButton(
+                    onClick = { editing = null; showDialog = true },
+                    icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                    text = { Text("Add Bracket") }
+                )
+            }
         }
     ) { padding ->
         LazyColumn(
@@ -125,36 +131,63 @@ fun ChargesScreen(
                 }
             }
             item {
-                Text(
-                    "Amounts that fall in a bracket earn its charge (your income). Amounts outside every bracket earn ₱0.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            item {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    TextButton(onClick = { showGenerate = true }) { Text("Generate") }
-                    TextButton(onClick = { confirmTemplate = true }) { Text("Sample") }
-                    TextButton(onClick = { showCopy = true }) { Text("Copy") }
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    SegmentedButton(
+                        selected = config.mode == ChargeMode.BRACKETS,
+                        onClick = { vm.setMode(ChargeMode.BRACKETS) },
+                        shape = SegmentedButtonDefaults.itemShape(0, 2),
+                        label = { Text("Brackets") }
+                    )
+                    SegmentedButton(
+                        selected = config.mode == ChargeMode.PERCENT,
+                        onClick = { vm.setMode(ChargeMode.PERCENT) },
+                        shape = SegmentedButtonDefaults.itemShape(1, 2),
+                        label = { Text("Percentage") }
+                    )
                 }
             }
 
-            if (brackets.isEmpty()) {
+            if (config.mode == ChargeMode.PERCENT) {
                 item {
-                    Text(
-                        "No brackets for ${flow.label} yet. Add one, or load the sample template.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 16.dp)
+                    PercentSettingsCard(
+                        config = config,
+                        flowLabel = flow.label,
+                        onSave = { percent, minCentavos -> vm.savePercent(percent, minCentavos) }
                     )
                 }
             } else {
-                items(brackets, key = { it.id }) { b ->
-                    BracketRow(
-                        bracket = b,
-                        onEdit = { editing = b; showDialog = true },
-                        onDelete = { vm.delete(b) }
+                item {
+                    Text(
+                        "Amounts that fall in a bracket earn its charge (your income). Amounts outside every bracket earn ₱0.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+                item {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        TextButton(onClick = { showGenerate = true }) { Text("Generate") }
+                        TextButton(onClick = { confirmTemplate = true }) { Text("Sample") }
+                        TextButton(onClick = { showCopy = true }) { Text("Copy") }
+                    }
+                }
+
+                if (brackets.isEmpty()) {
+                    item {
+                        Text(
+                            "No brackets for ${flow.label} yet. Add one, or load the sample template.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 16.dp)
+                        )
+                    }
+                } else {
+                    items(brackets, key = { it.id }) { b ->
+                        BracketRow(
+                            bracket = b,
+                            onEdit = { editing = b; showDialog = true },
+                            onDelete = { vm.delete(b) }
+                        )
+                    }
                 }
             }
         }
@@ -300,6 +333,78 @@ private fun CopyFromDialog(
         confirmButton = {},
         dismissButton = { TextButton(onClick = onDismiss) { Text("Close") } }
     )
+}
+
+@Composable
+private fun PercentSettingsCard(
+    config: ChargeConfig,
+    flowLabel: String,
+    onSave: (percent: Double, minCentavos: Long) -> Unit
+) {
+    fun trimmed(value: Double): String =
+        if (value == value.toLong().toDouble()) value.toLong().toString() else value.toString()
+
+    var percent by remember(config) {
+        mutableStateOf(if (config.percentBasisPoints > 0) trimmed(config.percent) else "")
+    }
+    var minText by remember(config) {
+        mutableStateOf(
+            if (config.minChargeCentavos > 0)
+                String.format(java.util.Locale.US, "%.2f", config.minChargeCentavos / 100.0)
+            else ""
+        )
+    }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Percentage charge for $flowLabel", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Charge a % of each amount, optionally with a minimum. Example: 2% with a ₱10 minimum.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            OutlinedTextField(
+                value = percent,
+                onValueChange = { input -> percent = input.filter { it.isDigit() || it == '.' } },
+                label = { Text("Percent (%)") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
+            )
+            OutlinedTextField(
+                value = minText,
+                onValueChange = { input -> minText = input.filter { it.isDigit() || it == '.' } },
+                label = { Text("Minimum charge (₱, optional)") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
+            )
+            error?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 8.dp))
+            }
+            Button(
+                onClick = {
+                    val p = percent.toDoubleOrNull()
+                    if (p == null || p <= 0.0) {
+                        error = "Enter a percentage greater than 0."
+                    } else {
+                        val minCentavos = if (minText.isBlank()) 0L else (PesoFormatter.parseToCentavos(minText) ?: 0L)
+                        onSave(p, minCentavos)
+                        error = null
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+            ) {
+                Text("Save percentage")
+            }
+        }
+    }
 }
 
 @Composable

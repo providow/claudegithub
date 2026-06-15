@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.gcashagent.tracker.core.data.repository.GCashRepository
 import com.gcashagent.tracker.core.domain.model.CashFlow
+import com.gcashagent.tracker.core.domain.model.ChargeConfig
 import com.gcashagent.tracker.core.domain.model.FeeBracket
 import com.gcashagent.tracker.core.domain.model.GCashNumber
 import com.gcashagent.tracker.core.domain.model.ReportSummary
@@ -79,12 +80,25 @@ class DayCaptureViewModel(
             mapOf(CashFlow.CASH_IN to cashIn, CashFlow.CASH_OUT to cashOut)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
+    /** This number's charge config (brackets vs percentage), keyed by direction. */
+    private val configs: StateFlow<Map<CashFlow, ChargeConfig>> =
+        combine(
+            repository.observeChargeConfig(numberId, CashFlow.CASH_IN),
+            repository.observeChargeConfig(numberId, CashFlow.CASH_OUT)
+        ) { cashIn, cashOut ->
+            mapOf(CashFlow.CASH_IN to cashIn, CashFlow.CASH_OUT to cashOut)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
     fun setDate(d: LocalDate) { _date.value = d }
     fun setFlow(f: CashFlow) { _flow.value = f }
 
-    /** Charge for an amount under the given direction's bracket table (0 if none match). */
+    /** Charge for an amount under the given direction's configuration (brackets or %). */
     fun chargeFor(flow: CashFlow, amountCentavos: Long): Long =
-        ChargeCalculator.chargeFor(brackets.value[flow].orEmpty(), amountCentavos)
+        ChargeCalculator.charge(
+            configs.value[flow] ?: ChargeConfig.DEFAULT,
+            brackets.value[flow].orEmpty(),
+            amountCentavos
+        )
 
     /**
      * Persist each screenshot and OCR it for amount + reference, creating a
