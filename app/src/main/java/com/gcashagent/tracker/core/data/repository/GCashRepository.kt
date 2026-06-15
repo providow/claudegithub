@@ -34,8 +34,11 @@ interface GCashRepository {
 
     // --- Charge brackets (per number, per direction) ---
     fun observeBrackets(numberId: Long, flow: CashFlow): Flow<List<FeeBracket>>
+    suspend fun getBrackets(numberId: Long, flow: CashFlow): List<FeeBracket>
     suspend fun upsertBracket(bracket: FeeBracket)
     suspend fun deleteBracket(bracket: FeeBracket)
+    /** Replace all brackets for a number+direction with [brackets]. */
+    suspend fun setBrackets(numberId: Long, flow: CashFlow, brackets: List<FeeBracket>)
     /** Replace a number+direction's brackets with the default template. */
     suspend fun loadDefaultTemplate(numberId: Long, flow: CashFlow)
 }

@@ -58,10 +58,13 @@ fun ChargesScreen(
     val number by vm.number.collectAsState()
     val flow by vm.flow.collectAsState()
     val brackets by vm.brackets.collectAsState()
+    val otherNumbers by vm.otherNumbers.collectAsState()
 
     var editing by remember { mutableStateOf<FeeBracket?>(null) }
     var showDialog by remember { mutableStateOf(false) }
     var confirmTemplate by remember { mutableStateOf(false) }
+    var showGenerate by remember { mutableStateOf(false) }
+    var showCopy by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -129,8 +132,10 @@ fun ChargesScreen(
                 )
             }
             item {
-                TextButton(onClick = { confirmTemplate = true }) {
-                    Text("Load sample template")
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(onClick = { showGenerate = true }) { Text("Generate") }
+                    TextButton(onClick = { confirmTemplate = true }) { Text("Sample") }
+                    TextButton(onClick = { showCopy = true }) { Text("Copy") }
                 }
             }
 
@@ -178,6 +183,123 @@ fun ChargesScreen(
             dismissButton = { TextButton(onClick = { confirmTemplate = false }) { Text("Cancel") } }
         )
     }
+
+    if (showGenerate) {
+        GenerateLadderDialog(
+            flowLabel = flow.label,
+            onDismiss = { showGenerate = false },
+            onGenerate = { start, step, firstFee, feeStep, upto ->
+                vm.generateLadder(start, step, firstFee, feeStep, upto)
+                showGenerate = false
+            }
+        )
+    }
+
+    if (showCopy) {
+        CopyFromDialog(
+            others = otherNumbers,
+            flowLabel = flow.label,
+            onDismiss = { showCopy = false },
+            onPick = { id -> vm.copyFrom(id); showCopy = false }
+        )
+    }
+}
+
+@Composable
+private fun GenerateLadderDialog(
+    flowLabel: String,
+    onDismiss: () -> Unit,
+    onGenerate: (start: Long, step: Long, firstFee: Long, feeStep: Long, upto: Long) -> Unit
+) {
+    var start by remember { mutableStateOf("1") }
+    var step by remember { mutableStateOf("500") }
+    var firstFee by remember { mutableStateOf("5") }
+    var feeStep by remember { mutableStateOf("5") }
+    var upto by remember { mutableStateOf("10000") }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    fun digits(s: String) = s.filter { it.isDigit() }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Generate $flowLabel ladder") },
+        text = {
+            Column {
+                Text(
+                    "Enter your rule and the whole table is built for you. Example: ₱5 for the first ₱500, +₱5 every ₱500, up to ₱10,000.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(modifier = Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(start, { start = digits(it) }, label = { Text("Start (₱)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f))
+                    OutlinedTextField(step, { step = digits(it) }, label = { Text("Per (₱)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f))
+                }
+                Row(modifier = Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(firstFee, { firstFee = digits(it) }, label = { Text("First charge") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f))
+                    OutlinedTextField(feeStep, { feeStep = digits(it) }, label = { Text("+ each step") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f))
+                }
+                OutlinedTextField(upto, { upto = digits(it) }, label = { Text("Up to (₱)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+                error?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 8.dp))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val s = start.toLongOrNull()
+                val st = step.toLongOrNull()
+                val ff = firstFee.toLongOrNull()
+                val fs = feeStep.toLongOrNull()
+                val up = upto.toLongOrNull()
+                if (s == null || st == null || ff == null || fs == null || up == null) {
+                    error = "Please fill in all fields."
+                } else if (st <= 0) {
+                    error = "\"Per\" must be greater than 0."
+                } else if (up < s) {
+                    error = "\"Up to\" must be at least the start amount."
+                } else {
+                    onGenerate(s, st, ff, fs, up)
+                }
+            }) { Text("Generate (replaces table)") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+@Composable
+private fun CopyFromDialog(
+    others: List<com.gcashagent.tracker.core.domain.model.GCashNumber>,
+    flowLabel: String,
+    onDismiss: () -> Unit,
+    onPick: (Long) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Copy $flowLabel charges from") },
+        text = {
+            if (others.isEmpty()) {
+                Text("No other GCash numbers to copy from.")
+            } else {
+                Column {
+                    Text(
+                        "Replaces this number's $flowLabel brackets with a copy from:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    others.forEach { n ->
+                        TextButton(
+                            onClick = { onPick(n.id) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("${n.alias} (${n.formattedNumber})", modifier = Modifier.fillMaxWidth())
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+    )
 }
 
 @Composable
