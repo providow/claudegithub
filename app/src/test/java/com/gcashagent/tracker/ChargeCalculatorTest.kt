@@ -1,6 +1,8 @@
 package com.gcashagent.tracker
 
 import com.gcashagent.tracker.core.domain.model.CashFlow
+import com.gcashagent.tracker.core.domain.model.ChargeConfig
+import com.gcashagent.tracker.core.domain.model.ChargeMode
 import com.gcashagent.tracker.core.domain.model.FeeBracket
 import com.gcashagent.tracker.core.util.ChargeCalculator
 import com.gcashagent.tracker.core.util.DefaultFeeTemplate
@@ -51,5 +53,26 @@ class ChargeCalculatorTest {
         assertEquals(500L, ChargeCalculator.chargeFor(brackets, 89900))    // ₱899 -> ₱5
         assertEquals(9500L, ChargeCalculator.chargeFor(brackets, 999900))  // ₱9,999 -> ₱95
         assertEquals(0L, ChargeCalculator.chargeFor(brackets, 1000000))    // ₱10,000 -> none
+    }
+
+    @Test
+    fun percentModeChargesRoundedPercentage() {
+        val cfg = ChargeConfig(ChargeMode.PERCENT, percentBasisPoints = 200) // 2%
+        assertEquals(2000L, ChargeCalculator.charge(cfg, emptyList(), 100000)) // ₱1,000 -> ₱20
+        assertEquals(0L, ChargeCalculator.charge(cfg, emptyList(), 0))
+    }
+
+    @Test
+    fun percentModeAppliesMinimum() {
+        val cfg = ChargeConfig(ChargeMode.PERCENT, percentBasisPoints = 200, minChargeCentavos = 1000) // 2%, min ₱10
+        assertEquals(1000L, ChargeCalculator.charge(cfg, emptyList(), 10000))  // ₱100 -> ₱2 -> min ₱10
+        assertEquals(2000L, ChargeCalculator.charge(cfg, emptyList(), 100000)) // ₱1,000 -> ₱20 > min
+    }
+
+    @Test
+    fun bracketsModeUsesTable() {
+        val cfg = ChargeConfig(ChargeMode.BRACKETS)
+        assertEquals(500L, ChargeCalculator.charge(cfg, table, 50000)) // ₱500 -> ₱5
+        assertEquals(0L, ChargeCalculator.charge(cfg, table, 500000))  // ₱5,000 -> none
     }
 }

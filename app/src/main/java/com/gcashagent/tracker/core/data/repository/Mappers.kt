@@ -1,8 +1,10 @@
 package com.gcashagent.tracker.core.data.repository
 
+import com.gcashagent.tracker.core.data.local.entity.ChargeConfigEntity
 import com.gcashagent.tracker.core.data.local.entity.FeeBracketEntity
 import com.gcashagent.tracker.core.data.local.entity.GCashNumberEntity
 import com.gcashagent.tracker.core.data.local.entity.TransactionEntity
+import com.gcashagent.tracker.core.domain.model.ChargeConfig
 import com.gcashagent.tracker.core.domain.model.FeeBracket
 import com.gcashagent.tracker.core.domain.model.GCashNumber
 import com.gcashagent.tracker.core.domain.model.Transaction
@@ -63,4 +65,10 @@ fun FeeBracket.toEntity() = FeeBracketEntity(
     minCentavos = minCentavos,
     maxCentavos = maxCentavos,
     feeCentavos = feeCentavos
+)
+
+fun ChargeConfigEntity.toDomain() = ChargeConfig(
+    mode = mode,
+    percentBasisPoints = percentBasisPoints,
+    minChargeCentavos = minChargeCentavos
 )

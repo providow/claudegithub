@@ -1,6 +1,7 @@
 package com.gcashagent.tracker.core.data.repository
 
 import com.gcashagent.tracker.core.domain.model.CashFlow
+import com.gcashagent.tracker.core.domain.model.ChargeConfig
 import com.gcashagent.tracker.core.domain.model.FeeBracket
 import com.gcashagent.tracker.core.domain.model.GCashNumber
 import com.gcashagent.tracker.core.domain.model.Transaction
@@ -41,6 +42,11 @@ interface GCashRepository {
     suspend fun setBrackets(numberId: Long, flow: CashFlow, brackets: List<FeeBracket>)
     /** Replace a number+direction's brackets with the default template. */
     suspend fun loadDefaultTemplate(numberId: Long, flow: CashFlow)
+
+    // --- Charge configuration (brackets vs percentage), per number + direction ---
+    fun observeChargeConfig(numberId: Long, flow: CashFlow): Flow<ChargeConfig>
+    suspend fun getChargeConfig(numberId: Long, flow: CashFlow): ChargeConfig
+    suspend fun setChargeConfig(numberId: Long, flow: CashFlow, config: ChargeConfig)
 }
 
 /** Thrown when enrolling/editing a number whose phone number is already in use. */

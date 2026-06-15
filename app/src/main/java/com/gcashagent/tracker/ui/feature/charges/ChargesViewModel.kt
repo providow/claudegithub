@@ -7,6 +7,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.gcashagent.tracker.core.data.repository.GCashRepository
 import com.gcashagent.tracker.core.domain.model.CashFlow
+import com.gcashagent.tracker.core.domain.model.ChargeConfig
+import com.gcashagent.tracker.core.domain.model.ChargeMode
 import com.gcashagent.tracker.core.domain.model.FeeBracket
 import com.gcashagent.tracker.core.domain.model.GCashNumber
 import com.gcashagent.tracker.core.util.FeeLadderGenerator
@@ -44,7 +46,34 @@ class ChargesViewModel(
             .map { list -> list.filter { it.id != numberId } }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /** Charge configuration for the current direction (brackets vs percentage). */
+    val config: StateFlow<ChargeConfig> =
+        _flow.flatMapLatest { repository.observeChargeConfig(numberId, it) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ChargeConfig.DEFAULT)
+
     fun setFlow(f: CashFlow) { _flow.value = f }
+
+    fun setMode(mode: ChargeMode) {
+        val flow = _flow.value
+        val current = config.value
+        viewModelScope.launch { repository.setChargeConfig(numberId, flow, current.copy(mode = mode)) }
+    }
+
+    /** Save percentage settings (and switch to percentage mode). */
+    fun savePercent(percent: Double, minChargeCentavos: Long) {
+        val flow = _flow.value
+        viewModelScope.launch {
+            repository.setChargeConfig(
+                numberId,
+                flow,
+                ChargeConfig(
+                    mode = ChargeMode.PERCENT,
+                    percentBasisPoints = ChargeConfig.percentOf(percent),
+                    minChargeCentavos = minChargeCentavos
+                )
+            )
+        }
+    }
 
     /** Replace the current direction's table with a generated linear ladder (inputs in pesos). */
     fun generateLadder(startPeso: Long, stepPeso: Long, firstFeePeso: Long, feeStepPeso: Long, uptoPeso: Long) {
