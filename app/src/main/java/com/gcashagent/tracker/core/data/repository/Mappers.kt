@@ -1,7 +1,9 @@
 package com.gcashagent.tracker.core.data.repository
 
+import com.gcashagent.tracker.core.data.local.entity.FeeBracketEntity
 import com.gcashagent.tracker.core.data.local.entity.GCashNumberEntity
 import com.gcashagent.tracker.core.data.local.entity.TransactionEntity
+import com.gcashagent.tracker.core.domain.model.FeeBracket
 import com.gcashagent.tracker.core.domain.model.GCashNumber
 import com.gcashagent.tracker.core.domain.model.Transaction
 
@@ -25,6 +27,7 @@ fun TransactionEntity.toDomain() = Transaction(
     dateTime = dateTime,
     type = type,
     amountCentavos = amountCentavos,
+    chargeCentavos = chargeCentavos,
     counterpartyNumber = counterpartyNumber,
     referenceNumber = referenceNumber,
     screenshotPath = screenshotPath,
@@ -37,8 +40,27 @@ fun Transaction.toEntity() = TransactionEntity(
     dateTime = dateTime,
     type = type,
     amountCentavos = amountCentavos,
+    chargeCentavos = chargeCentavos,
     counterpartyNumber = counterpartyNumber,
     referenceNumber = referenceNumber,
     screenshotPath = screenshotPath,
     createdAt = createdAt
+)
+
+fun FeeBracketEntity.toDomain() = FeeBracket(
+    id = id,
+    gcashNumberId = gcashNumberId,
+    flow = flow,
+    minCentavos = minCentavos,
+    maxCentavos = maxCentavos,
+    feeCentavos = feeCentavos
+)
+
+fun FeeBracket.toEntity() = FeeBracketEntity(
+    id = id,
+    gcashNumberId = gcashNumberId,
+    flow = flow,
+    minCentavos = minCentavos,
+    maxCentavos = maxCentavos,
+    feeCentavos = feeCentavos
 )

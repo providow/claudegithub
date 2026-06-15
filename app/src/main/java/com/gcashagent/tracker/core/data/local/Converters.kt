@@ -1,6 +1,7 @@
 package com.gcashagent.tracker.core.data.local
 
 import androidx.room.TypeConverter
+import com.gcashagent.tracker.core.domain.model.CashFlow
 import com.gcashagent.tracker.core.domain.model.TransactionType
 
 class Converters {
@@ -9,4 +10,10 @@ class Converters {
 
     @TypeConverter
     fun toTransactionType(value: String): TransactionType = TransactionType.valueOf(value)
+
+    @TypeConverter
+    fun fromCashFlow(flow: CashFlow): String = flow.name
+
+    @TypeConverter
+    fun toCashFlow(value: String): CashFlow = CashFlow.valueOf(value)
 }

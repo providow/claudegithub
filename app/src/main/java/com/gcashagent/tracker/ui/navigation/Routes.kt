@@ -13,6 +13,9 @@ object Routes {
     const val DAY = "day/{$ARG_NUMBER_ID}"
     fun day(numberId: Long) = "day/$numberId"
 
+    const val CHARGES = "charges/{$ARG_NUMBER_ID}"
+    fun charges(numberId: Long) = "charges/$numberId"
+
     const val TRANSACTIONS = "transactions/{$ARG_NUMBER_ID}"
     fun transactions(numberId: Long) = "transactions/$numberId"
 

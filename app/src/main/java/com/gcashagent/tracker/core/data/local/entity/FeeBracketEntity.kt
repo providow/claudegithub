@@ -1,14 +1,13 @@
 package com.gcashagent.tracker.core.data.local.entity
 
-import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.gcashagent.tracker.core.domain.model.TransactionType
+import com.gcashagent.tracker.core.domain.model.CashFlow
 
 @Entity(
-    tableName = "transactions",
+    tableName = "fee_brackets",
     foreignKeys = [
         ForeignKey(
             entity = GCashNumberEntity::class,
@@ -17,17 +16,13 @@ import com.gcashagent.tracker.core.domain.model.TransactionType
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("gcashNumberId"), Index("dateTime")]
+    indices = [Index("gcashNumberId")]
 )
-data class TransactionEntity(
+data class FeeBracketEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val gcashNumberId: Long,
-    val dateTime: Long,
-    val type: TransactionType,
-    val amountCentavos: Long,
-    @ColumnInfo(defaultValue = "0") val chargeCentavos: Long = 0,
-    val counterpartyNumber: String?,
-    val referenceNumber: String?,
-    val screenshotPath: String?,
-    val createdAt: Long
+    val flow: CashFlow,
+    val minCentavos: Long,
+    val maxCentavos: Long,
+    val feeCentavos: Long
 )

@@ -12,6 +12,8 @@ data class Transaction(
     val dateTime: Long,
     val type: TransactionType,
     val amountCentavos: Long,
+    /** The agent's charge (income) for this transaction, snapshotted at entry. */
+    val chargeCentavos: Long = 0,
     val counterpartyNumber: String? = null,
     val referenceNumber: String? = null,
     val screenshotPath: String? = null,
