@@ -16,6 +16,9 @@ interface FeeBracketDao {
     @Query("SELECT * FROM fee_brackets WHERE gcashNumberId = :numberId AND flow = :flow ORDER BY minCentavos ASC")
     fun observeForFlow(numberId: Long, flow: CashFlow): Flow<List<FeeBracketEntity>>
 
+    @Query("SELECT * FROM fee_brackets WHERE gcashNumberId = :numberId AND flow = :flow ORDER BY minCentavos ASC")
+    suspend fun getForFlow(numberId: Long, flow: CashFlow): List<FeeBracketEntity>
+
     @Query("SELECT * FROM fee_brackets WHERE gcashNumberId = :numberId")
     fun observeForNumber(numberId: Long): Flow<List<FeeBracketEntity>>
 

@@ -74,6 +74,24 @@ class GCashRepositoryImpl(
     override fun observeBrackets(numberId: Long, flow: CashFlow): Flow<List<FeeBracket>> =
         feeBracketDao.observeForFlow(numberId, flow).map { list -> list.map { it.toDomain() } }
 
+    override suspend fun getBrackets(numberId: Long, flow: CashFlow): List<FeeBracket> =
+        feeBracketDao.getForFlow(numberId, flow).map { it.toDomain() }
+
+    override suspend fun setBrackets(numberId: Long, flow: CashFlow, brackets: List<FeeBracket>) {
+        feeBracketDao.clearFlow(numberId, flow)
+        feeBracketDao.insertAll(
+            brackets.map {
+                FeeBracketEntity(
+                    gcashNumberId = numberId,
+                    flow = flow,
+                    minCentavos = it.minCentavos,
+                    maxCentavos = it.maxCentavos,
+                    feeCentavos = it.feeCentavos
+                )
+            }
+        )
+    }
+
     override suspend fun upsertBracket(bracket: FeeBracket) {
         if (bracket.id == 0L) feeBracketDao.insert(bracket.toEntity())
         else feeBracketDao.update(bracket.toEntity())
