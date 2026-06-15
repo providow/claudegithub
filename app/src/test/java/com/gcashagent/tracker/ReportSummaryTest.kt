@@ -8,8 +8,8 @@ import org.junit.Test
 
 class ReportSummaryTest {
 
-    private fun txn(type: TransactionType, centavos: Long) =
-        Transaction(gcashNumberId = 1, dateTime = 0, type = type, amountCentavos = centavos)
+    private fun txn(type: TransactionType, centavos: Long, charge: Long = 0) =
+        Transaction(gcashNumberId = 1, dateTime = 0, type = type, amountCentavos = centavos, chargeCentavos = charge)
 
     @Test
     fun aggregatesCashInOutNetAndCount() {
@@ -24,6 +24,18 @@ class ReportSummaryTest {
         assertEquals(30_00L, summary.totalCashOutCentavos)
         assertEquals(120_00L, summary.netCentavos)
         assertEquals(3, summary.transactionCount)
+    }
+
+    @Test
+    fun sumsChargesAsIncome() {
+        val txns = listOf(
+            txn(TransactionType.SEND, 100_00, charge = 5_00),
+            txn(TransactionType.RECEIVE, 200_00, charge = 10_00),
+            txn(TransactionType.SEND, 50_00, charge = 0)
+        )
+        val summary = ReportSummary.from(txns)
+        assertEquals(15_00L, summary.totalChargeCentavos)
+        assertEquals(15_00L, summary.incomeCentavos)
     }
 
     @Test

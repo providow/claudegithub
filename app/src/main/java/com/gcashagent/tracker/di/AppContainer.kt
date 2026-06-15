@@ -19,7 +19,8 @@ class AppContainer(context: Context) {
 
     val repository: GCashRepository = GCashRepositoryImpl(
         numberDao = database.gcashNumberDao(),
-        transactionDao = database.transactionDao()
+        transactionDao = database.transactionDao(),
+        feeBracketDao = database.feeBracketDao()
     )
 
     val imageStore: ImageStore = ImageStore(context)

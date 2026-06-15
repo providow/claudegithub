@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.gcashagent.tracker.ui.feature.charges.ChargesScreen
 import com.gcashagent.tracker.ui.feature.day.DayCaptureScreen
 import com.gcashagent.tracker.ui.feature.numbers.NumbersScreen
 import com.gcashagent.tracker.ui.feature.report.ReportScreen
@@ -33,7 +34,19 @@ fun AppNavGraph() {
             DayCaptureScreen(
                 numberId = numberId,
                 onBack = { nav.popBackStack() },
-                onOpenReport = { nav.navigate(Routes.report(numberId)) }
+                onOpenReport = { nav.navigate(Routes.report(numberId)) },
+                onOpenCharges = { nav.navigate(Routes.charges(numberId)) }
+            )
+        }
+
+        composable(
+            route = Routes.CHARGES,
+            arguments = listOf(navArgument(Routes.ARG_NUMBER_ID) { type = NavType.LongType })
+        ) { entry ->
+            val numberId = entry.arguments?.getLong(Routes.ARG_NUMBER_ID) ?: return@composable
+            ChargesScreen(
+                numberId = numberId,
+                onBack = { nav.popBackStack() }
             )
         }
 

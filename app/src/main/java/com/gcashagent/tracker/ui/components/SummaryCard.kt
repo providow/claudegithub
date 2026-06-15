@@ -53,7 +53,7 @@ fun SummaryCard(summary: ReportSummary, modifier: Modifier = Modifier) {
                     Text("Net (In − Out)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         text = PesoFormatter.formatSigned(summary.netCentavos),
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = if (summary.netCentavos < 0) CashOutRed else CashInGreen
                     )
@@ -62,10 +62,28 @@ fun SummaryCard(summary: ReportSummary, modifier: Modifier = Modifier) {
                     Text("Transactions", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         text = summary.transactionCount.toString(),
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                 }
+            }
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Income (charges)",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = PesoFormatter.format(summary.incomeCentavos),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }

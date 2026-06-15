@@ -1,5 +1,7 @@
 package com.gcashagent.tracker.core.data.repository
 
+import com.gcashagent.tracker.core.domain.model.CashFlow
+import com.gcashagent.tracker.core.domain.model.FeeBracket
 import com.gcashagent.tracker.core.domain.model.GCashNumber
 import com.gcashagent.tracker.core.domain.model.Transaction
 import kotlinx.coroutines.flow.Flow
@@ -29,6 +31,13 @@ interface GCashRepository {
     suspend fun addTransaction(transaction: Transaction): Long
     suspend fun updateTransaction(transaction: Transaction)
     suspend fun deleteTransaction(transaction: Transaction)
+
+    // --- Charge brackets (per number, per direction) ---
+    fun observeBrackets(numberId: Long, flow: CashFlow): Flow<List<FeeBracket>>
+    suspend fun upsertBracket(bracket: FeeBracket)
+    suspend fun deleteBracket(bracket: FeeBracket)
+    /** Replace a number+direction's brackets with the default template. */
+    suspend fun loadDefaultTemplate(numberId: Long, flow: CashFlow)
 }
 
 /** Thrown when enrolling/editing a number whose phone number is already in use. */

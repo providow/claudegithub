@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -87,7 +88,8 @@ import java.time.ZoneOffset
 fun DayCaptureScreen(
     numberId: Long,
     onBack: () -> Unit,
-    onOpenReport: () -> Unit
+    onOpenReport: () -> Unit,
+    onOpenCharges: () -> Unit
 ) {
     val container = appContainer()
     val context = LocalContext.current
@@ -137,10 +139,16 @@ fun DayCaptureScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    IconButton(onClick = onOpenCharges) {
+                        Icon(Icons.Filled.Percent, contentDescription = "Charges")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         },
@@ -256,9 +264,10 @@ fun DayCaptureScreen(
     editing?.let { txn ->
         EditAmountDialog(
             transaction = txn,
+            computeCharge = { amountCentavos -> vm.chargeFor(txn.cashFlow, amountCentavos) },
             onDismiss = { editing = null },
-            onSave = { centavos, ref ->
-                vm.updateAmountAndRef(txn, centavos, ref)
+            onSave = { centavos, charge, ref ->
+                vm.updateTransaction(txn, centavos, charge, ref)
                 editing = null
             }
         )
@@ -325,7 +334,7 @@ private fun DayTransactionRow(
                     )
                 }
                 Text(
-                    PhDateTime.formatTime(transaction.dateTime),
+                    "${PhDateTime.formatTime(transaction.dateTime)} · Charge ${PesoFormatter.format(transaction.chargeCentavos)}",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -350,16 +359,15 @@ private fun DayTransactionRow(
 @Composable
 private fun EditAmountDialog(
     transaction: Transaction,
+    computeCharge: (Long) -> Long,
     onDismiss: () -> Unit,
-    onSave: (centavos: Long, ref: String?) -> Unit
+    onSave: (centavos: Long, charge: Long, ref: String?) -> Unit
 ) {
-    var amount by remember {
-        mutableStateOf(
-            if (transaction.amountCentavos > 0)
-                String.format(java.util.Locale.US, "%.2f", transaction.amountPesos)
-            else ""
-        )
-    }
+    fun pesos(centavos: Long) =
+        if (centavos > 0) String.format(java.util.Locale.US, "%.2f", centavos / 100.0) else ""
+
+    var amount by remember { mutableStateOf(pesos(transaction.amountCentavos)) }
+    var charge by remember { mutableStateOf(pesos(transaction.chargeCentavos)) }
     var ref by remember { mutableStateOf(transaction.referenceNumber ?: "") }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -377,11 +385,25 @@ private fun EditAmountDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
+                    value = charge,
+                    onValueChange = { input -> charge = input.filter { it.isDigit() || it == '.' } },
+                    label = { Text("Charge / income (₱)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
+                )
+                TextButton(
+                    onClick = {
+                        val amt = PesoFormatter.parseToCentavos(amount)
+                        if (amt != null) charge = pesos(computeCharge(amt))
+                    }
+                ) { Text("Use charge from table") }
+                OutlinedTextField(
                     value = ref,
                     onValueChange = { ref = it },
                     label = { Text("Reference number (optional)") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
                 error?.let {
                     Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 8.dp))
@@ -394,7 +416,8 @@ private fun EditAmountDialog(
                 if (centavos == null || centavos <= 0L) {
                     error = "Enter a valid amount greater than ₱0."
                 } else {
-                    onSave(centavos, ref)
+                    val chargeCentavos = PesoFormatter.parseToCentavos(charge) ?: 0L
+                    onSave(centavos, chargeCentavos, ref)
                 }
             }) { Text("Save") }
         },

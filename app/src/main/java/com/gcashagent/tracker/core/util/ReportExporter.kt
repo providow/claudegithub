@@ -41,6 +41,7 @@ class ReportExporter(private val context: Context) {
         rows += listOf(ExcelWriter.cell("Total Cash In"), ExcelWriter.cell(PesoFormatter.pesosValue(summary.totalCashInCentavos)))
         rows += listOf(ExcelWriter.cell("Total Cash Out"), ExcelWriter.cell(PesoFormatter.pesosValue(summary.totalCashOutCentavos)))
         rows += listOf(ExcelWriter.cell("Net (In − Out)"), ExcelWriter.cell(PesoFormatter.pesosValue(summary.netCentavos)))
+        rows += listOf(ExcelWriter.cell("Total Income (Charges)"), ExcelWriter.cell(PesoFormatter.pesosValue(summary.incomeCentavos)))
         rows += listOf(ExcelWriter.cell("Transactions"), ExcelWriter.cell(summary.transactionCount.toDouble()))
         rows.add(emptyList())
 
@@ -51,6 +52,7 @@ class ReportExporter(private val context: Context) {
             ExcelWriter.cell("Type"),
             ExcelWriter.cell("Cash Flow"),
             ExcelWriter.cell("Amount"),
+            ExcelWriter.cell("Charge"),
             ExcelWriter.cell("From / To"),
             ExcelWriter.cell("Reference No.")
         )
@@ -65,6 +67,7 @@ class ReportExporter(private val context: Context) {
                 ExcelWriter.cell(t.type.label),
                 ExcelWriter.cell(if (t.cashFlow == CashFlow.CASH_IN) "Cash In" else "Cash Out"),
                 ExcelWriter.cell(PesoFormatter.pesosValue(t.amountCentavos)),
+                ExcelWriter.cell(PesoFormatter.pesosValue(t.chargeCentavos)),
                 ExcelWriter.cell(t.counterpartyNumber ?: ""),
                 ExcelWriter.cell(t.referenceNumber ?: "")
             )
